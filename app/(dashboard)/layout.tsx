@@ -3,13 +3,18 @@ import { useState } from "react";
 import Navbar from "./(comp)/navbar";
 import Sidebar from "./(comp)/sidebar";
 import Dashboard from "./(comp)/dashboard";
-import Footer from "./(comp)/footer";
+
 import EngineeringNewsFeed from "./(comp)/newfeed";
+import { Menu } from "lucide-react";
 
 export default function RootLayout() {
   const [activeButton, setActiveButton] = useState("Dashboard");
+  const [isSidebarOpen, setSidebarOpen] = useState(false);
 
-  // Define content for each button
+  const toggleSidebar = () => {
+    setSidebarOpen(!isSidebarOpen);
+  };
+
   const renderContent = () => {
     switch (activeButton) {
       case "Dashboard":
@@ -32,19 +37,33 @@ export default function RootLayout() {
   };
 
   return (
-    <div className="flex w-[100vw]">
-      <div>
-        <Sidebar setActiveButton={setActiveButton} />
-      </div>
+    <div className="flex flex-col md:flex-row w-full min-h-screen bg-gray-50">
+      {/* Sidebar */}
+      <Sidebar
+        setActiveButton={setActiveButton}
+        isOpen={isSidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+
       {/* Main Content */}
-      <div className="flex-1 h-screen flex flex-col">
-        <div>
+      <div className="flex-1 flex flex-col min-h-screen">
+        {/* Navbar with sidebar toggle for mobile */}
+        <div className="sticky top-0 z-30">
+          <div className="md:hidden absolute left-4 top-4 z-50">
+            <button
+              onClick={toggleSidebar}
+              className="p-2 bg-white rounded-lg shadow-md"
+              aria-label="Toggle sidebar"
+            >
+              <Menu size={24} />
+            </button>
+          </div>
           <Navbar />
         </div>
-        <main className="flex flex-1 ml-[256px] pt-15 ">
-          <div className="bg-gray-50 pl-256px p-6 rounded-lg  w-full  ">
-            {renderContent()}
-          </div>
+
+        {/* Main content area */}
+        <main className="flex-1 p-4 pt-20 md:pt-16 md:ml-64">
+          <div className=" p-4 md:p-6  w-full">{renderContent()}</div>
         </main>
       </div>
     </div>
