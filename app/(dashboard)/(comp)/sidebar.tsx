@@ -34,7 +34,9 @@ const Sidebar = ({ setActiveButton, isOpen, onClose }: SidebarProps) => {
       `}
       >
         <div className="flex justify-between items-center">
-          <h2 className="text-xl md:text-2xl font-bold text-blue-600">ABCDE</h2>
+          <h2 className="text-xl md:text-2xl font-bold text-blue-600">
+            IEEE Pune
+          </h2>
           <button
             onClick={onClose}
             className="md:hidden p-2 hover:bg-gray-100 rounded-lg"
