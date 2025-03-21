@@ -7,6 +7,7 @@ import Dashboard from "./(comp)/dashboard";
 import EngineeringNewsFeed from "./(comp)/newfeed";
 import { Menu } from "lucide-react";
 import Courses from "./(courses)/courses";
+import UploadNotes from "./(courses)/uploadcourse";
 
 export default function RootLayout() {
   const [activeButton, setActiveButton] = useState("Dashboard");
@@ -23,7 +24,7 @@ export default function RootLayout() {
       case "Courses":
         return <Courses />;
       case "Study Lists":
-        return <h1 className="text-3xl font-bold">Study Lists Section</h1>;
+        return <UploadNotes />;
       case "Newsfeed":
         return <EngineeringNewsFeed />;
       case "Chat":

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,217 +28,127 @@ const branches = [
   "Electrical Engineering",
 ];
 
-// Restructured subjects object to account for year and branch
-const subjects = {
-  "First Year": {
-    "Computer Engineering": [
-      "Engineering Mathematics I",
-      "Physics",
-      "Chemistry",
-      "Basic Electrical Engineering",
-      "Programming Fundamentals",
-    ],
-    "Information Technology": [
-      "Engineering Mathematics I",
-      "Physics",
-      "Chemistry",
-      "Basic Electrical Engineering",
-      "Introduction to IT Systems",
-    ],
-    "Electronics & Telecommunication": [
-      "Engineering Mathematics I",
-      "Physics",
-      "Chemistry",
-      "Basic Electrical Engineering",
-      "Electronic Components",
-    ],
-    "Mechanical Engineering": [
-      "Engineering Mathematics I",
-      "Physics",
-      "Chemistry",
-      "Engineering Graphics",
-      "Workshop Practice",
-    ],
-    "Civil Engineering": [
-      "Engineering Mathematics I",
-      "Physics",
-      "Chemistry",
-      "Engineering Graphics",
-      "Environmental Studies",
-    ],
-    "Electrical Engineering": [
-      "Engineering Mathematics I",
-      "Physics",
-      "Chemistry",
-      "Basic Electrical Engineering",
-      "Electrical Circuits",
-    ],
-  },
-  "Second Year": {
-    "Computer Engineering": [
-      "Data Structures & Algorithms",
-      "Digital Logic Design",
-      "Object-Oriented Programming",
-      "Computer Organization",
-      "Discrete Mathematics",
-    ],
-    "Information Technology": [
-      "Data Structures & Algorithms",
-      "Web Development",
-      "Object-Oriented Programming",
-      "Database Management Systems",
-      "Computer Networks Basics",
-    ],
-    "Electronics & Telecommunication": [
-      "Analog Circuits",
-      "Digital Electronics",
-      "Signals & Systems",
-      "Electrical Networks",
-      "Electronic Instruments",
-    ],
-    "Mechanical Engineering": [
-      "Engineering Mechanics",
-      "Strength of Materials",
-      "Thermodynamics",
-      "Manufacturing Processes I",
-      "Material Science",
-    ],
-    "Civil Engineering": [
-      "Surveying",
-      "Building Materials",
-      "Strength of Materials",
-      "Fluid Mechanics I",
-      "Structural Analysis I",
-    ],
-    "Electrical Engineering": [
-      "Electromagnetic Fields",
-      "Electrical Measurements",
-      "Electrical Machines I",
-      "Analog Electronics",
-      "Digital Electronics",
-    ],
-  },
-  "Third Year": {
-    "Computer Engineering": [
-      "Operating Systems",
-      "Database Management Systems",
-      "Computer Networks",
-      "Theory of Computation",
-      "Software Engineering",
-    ],
-    "Information Technology": [
-      "Operating Systems",
-      "Advanced Database Systems",
-      "Computer Networks",
-      "Information Security",
-      "Software Engineering",
-    ],
-    "Electronics & Telecommunication": [
-      "Communication Systems",
-      "Microprocessors & Microcontrollers",
-      "Digital Signal Processing",
-      "Control Systems",
-      "Electromagnetic Waves",
-    ],
-    "Mechanical Engineering": [
-      "Heat Transfer",
-      "Design of Machine Elements",
-      "Fluid Mechanics",
-      "Manufacturing Processes II",
-      "Industrial Engineering",
-    ],
-    "Civil Engineering": [
-      "Geotechnical Engineering",
-      "Transportation Engineering",
-      "Structural Analysis II",
-      "Hydraulics Engineering",
-      "Environmental Engineering",
-    ],
-    "Electrical Engineering": [
-      "Power Systems I",
-      "Control Systems",
-      "Electrical Machines II",
-      "Power Electronics",
-      "Signal Processing",
-    ],
-  },
-  "Final Year": {
-    "Computer Engineering": [
-      "Artificial Intelligence",
-      "Machine Learning",
-      "Cloud Computing",
-      "Big Data Analytics",
-      "Cybersecurity",
-    ],
-    "Information Technology": [
-      "Artificial Intelligence",
-      "Machine Learning",
-      "Cloud Computing",
-      "Mobile Computing",
-      "Big Data Technologies",
-    ],
-    "Electronics & Telecommunication": [
-      "Wireless Communication",
-      "VLSI Design",
-      "Antenna & Wave Propagation",
-      "Optical Communication",
-      "Embedded Systems",
-    ],
-    "Mechanical Engineering": [
-      "CAD/CAM/CAE",
-      "Refrigeration & Air Conditioning",
-      "Automobile Engineering",
-      "Robotics",
-      "Power Plant Engineering",
-    ],
-    "Civil Engineering": [
-      "Design of Structures",
-      "Construction Management",
-      "Water Resource Engineering",
-      "Urban Planning",
-      "Remote Sensing & GIS",
-    ],
-    "Electrical Engineering": [
-      "Power Systems II",
-      "High Voltage Engineering",
-      "Renewable Energy Systems",
-      "Electrical Drives",
-      "Smart Grids",
-    ],
-  },
-};
-
 export default function Courses() {
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [selectedSubject, setSelectedSubject] = useState<string>("");
+  const [subjects, setSubjects] = useState<
+    { name: string; notesFileUrl: string }[]
+  >([]);
+  const [selectedPdfUrl, setSelectedPdfUrl] = useState<string>("");
+  const [quiz, setQuiz] = useState<any[]>([]); // State to store quiz data
+  const [userAnswers, setUserAnswers] = useState<{ [key: string]: string }>({}); // State to store user answers
+
+  useEffect(() => {
+    if (selectedYear && selectedBranch) {
+      fetchSubjects(selectedYear, selectedBranch);
+    }
+  }, [selectedYear, selectedBranch]);
+
+  const fetchSubjects = async (year: string, branch: string) => {
+    try {
+      const response = await fetch(
+        `/api/course?year=${encodeURIComponent(
+          year
+        )}&branch=${encodeURIComponent(branch)}`
+      );
+      const data = await response.json();
+      console.log("API Response:", data);
+
+      if (data.courses && data.courses.length > 0) {
+        const matchedCourse = data.courses.find(
+          (course: { year: string; branch: string }) =>
+            course.year === year && course.branch === branch
+        );
+
+        if (matchedCourse) {
+          const fetchedSubjects = matchedCourse.subjects.map(
+            (subject: { name: string; notesFileUrl: string }) => ({
+              name: subject.name,
+              notesFileUrl: subject.notesFileUrl,
+            })
+          );
+          setSubjects(fetchedSubjects);
+        } else {
+          setSubjects([]);
+        }
+      } else {
+        setSubjects([]);
+      }
+    } catch (error) {
+      console.error("Error fetching subjects:", error);
+      setSubjects([]);
+    }
+  };
 
   const handleYearChange = (value: string) => {
     setSelectedYear(value);
     setSelectedBranch("");
     setSelectedSubject("");
+    setSubjects([]);
+    setSelectedPdfUrl("");
   };
 
   const handleBranchChange = (value: string) => {
     setSelectedBranch(value);
     setSelectedSubject("");
+    setSubjects([]);
+    setSelectedPdfUrl("");
   };
 
   const handleSubjectChange = (value: string) => {
     setSelectedSubject(value);
+    const selectedSubjectData = subjects.find(
+      (subject) => subject.name === value
+    );
+    if (selectedSubjectData) {
+      setSelectedPdfUrl(selectedSubjectData.notesFileUrl);
+    } else {
+      setSelectedPdfUrl("");
+    }
   };
 
-  const handleProceed = () => {
-    // Navigate to assessment page with selected options
-    window.location.href = `/assessment?year=${encodeURIComponent(
-      selectedYear
-    )}&branch=${encodeURIComponent(
-      selectedBranch
-    )}&subject=${encodeURIComponent(selectedSubject)}`;
+  const handleProceed = async () => {
+    try {
+      // Step 1: Generate quiz from the PDF
+      const response = await fetch("/api/generate-quiz", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ pdfUrl: selectedPdfUrl }),
+      });
+      const data = await response.json();
+      if (data.quiz) {
+        const quizData = JSON.parse(data.quiz); // Parse the quiz JSON
+        setQuiz(quizData);
+      }
+    } catch (error) {
+      console.error("Error generating quiz:", error);
+    }
+  };
+
+  const handleAnswerChange = (questionId: string, answer: string) => {
+    setUserAnswers((prev) => ({
+      ...prev,
+      [questionId]: answer,
+    }));
+  };
+
+  const handleSubmitQuiz = () => {
+    // Evaluate user answers
+    const score = quiz.reduce((acc, question) => {
+      if (userAnswers[question.id] === question.correctAnswer) {
+        return acc + 1;
+      }
+      return acc;
+    }, 0);
+
+    alert(`You scored ${score} out of ${quiz.length}`);
   };
 
   return (
-    <div className="min-h-screen  py-12">
+    <div className="min-h-screen py-12">
       <div className="max-w-4xl mx-auto px-4">
         <h1 className="text-3xl font-bold text-center mb-8">
           Course Selection
@@ -301,15 +211,11 @@ export default function Courses() {
                 <SelectValue placeholder="Choose your subject" />
               </SelectTrigger>
               <SelectContent>
-                {selectedYear &&
-                  selectedBranch &&
-                  subjects[selectedYear as keyof typeof subjects]?.[
-                    selectedBranch as keyof (typeof subjects)[keyof typeof subjects]
-                  ]?.map((subject) => (
-                    <SelectItem key={subject} value={subject}>
-                      {subject}
-                    </SelectItem>
-                  ))}
+                {subjects.map((subject) => (
+                  <SelectItem key={subject.name} value={subject.name}>
+                    {subject.name}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </Card>
@@ -320,6 +226,59 @@ export default function Courses() {
             Proceed to Learn & Assessment
             <ArrowRight className="ml-2 h-5 w-5" />
           </Button>
+        )}
+
+        {selectedPdfUrl && (
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold mb-4">Subject Notes</h2>
+            <iframe
+              src={selectedPdfUrl}
+              width="100%"
+              height="600px"
+              style={{ border: "none" }}
+              title="PDF Viewer"
+            />
+          </div>
+        )}
+
+        {quiz.length > 0 && (
+          <div className="mt-8">
+            <h2 className="text-2xl font-bold mb-4">Quiz</h2>
+            {quiz.map((question, index) => (
+              <div key={index} className="mb-6">
+                <h3 className="text-lg font-semibold">{question.question}</h3>
+                <div className="space-y-2">
+                  {question.options.map(
+                    (option: string, optionIndex: number) => (
+                      <div key={optionIndex} className="flex items-center">
+                        <input
+                          type="radio"
+                          id={`question-${index}-option-${optionIndex}`}
+                          name={`question-${index}`}
+                          value={option}
+                          onChange={() =>
+                            handleAnswerChange(index.toString(), option)
+                          }
+                          className="mr-2"
+                        />
+                        <label
+                          htmlFor={`question-${index}-option-${optionIndex}`}
+                        >
+                          {option}
+                        </label>
+                      </div>
+                    )
+                  )}
+                </div>
+              </div>
+            ))}
+            <Button
+              className="w-full mt-8 py-6 text-lg"
+              onClick={handleSubmitQuiz}
+            >
+              Submit Quiz
+            </Button>
+          </div>
         )}
       </div>
     </div>
