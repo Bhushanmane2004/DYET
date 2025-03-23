@@ -10,24 +10,29 @@ cloudinary.config({
 export default cloudinary;
 
 export const uploadToCloudinary = async (
-  buffer: Buffer, 
-  folder: string,
+  fileBuffer: Buffer,
+  folderPath: string,
   fileName: string
 ): Promise<string> => {
   return new Promise((resolve, reject) => {
-    const uploadOptions = {
-      folder,
-      resource_type: 'auto',
-      public_id: fileName.replace(/\.[^/.]+$/, ""), // Remove extension
-    };
-
-    cloudinary.uploader.upload_stream(
-      uploadOptions,
-      (error, result) => {
-        if (error) return reject(error);
-        if (!result) return reject(new Error('Upload failed'));
-        resolve(result.secure_url);
-      }
-    ).end(buffer);
+    cloudinary.uploader
+      .upload_stream(
+        {
+          resource_type: "auto",
+          folder: folderPath,
+          public_id: fileName,
+        },
+        (error, result) => {
+          if (error) {
+            console.error("Cloudinary upload error:", error);
+            reject(new Error("Failed to upload notes"));
+          } else if (result) {
+            resolve(result.secure_url);
+          } else {
+            reject(new Error("No result from Cloudinary"));
+          }
+        }
+      )
+      .end(fileBuffer);
   });
 };

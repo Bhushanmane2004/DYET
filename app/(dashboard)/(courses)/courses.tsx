@@ -33,11 +33,12 @@ export default function Courses() {
   const [selectedBranch, setSelectedBranch] = useState<string>("");
   const [selectedSubject, setSelectedSubject] = useState<string>("");
   const [subjects, setSubjects] = useState<
-    { name: string; notesFileUrl: string }[]
+    { name: string; notesFileUrl: string; subjectId?: string }[]
   >([]);
   const [selectedPdfUrl, setSelectedPdfUrl] = useState<string>("");
-  const [quiz, setQuiz] = useState<any[]>([]); // State to store quiz data
-  const [userAnswers, setUserAnswers] = useState<{ [key: string]: string }>({}); // State to store user answers
+  const [quiz, setQuiz] = useState<any[]>([]);
+  const [userAnswers, setUserAnswers] = useState<{ [key: string]: string }>({});
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   useEffect(() => {
     if (selectedYear && selectedBranch) {
@@ -47,6 +48,7 @@ export default function Courses() {
 
   const fetchSubjects = async (year: string, branch: string) => {
     try {
+      setIsLoading(true);
       const response = await fetch(
         `/api/course?year=${encodeURIComponent(
           year
@@ -56,28 +58,35 @@ export default function Courses() {
       console.log("API Response:", data);
 
       if (data.courses && data.courses.length > 0) {
-        const matchedCourse = data.courses.find(
-          (course: { year: string; branch: string }) =>
-            course.year === year && course.branch === branch
+        // Get all subjects from all matching courses
+        let allSubjects: {
+          name: string;
+          notesFileUrl: string;
+          subjectId?: string;
+        }[] = [];
+
+        data.courses.forEach((course: any) => {
+          if (course.subjects && Array.isArray(course.subjects)) {
+            allSubjects = [...allSubjects, ...course.subjects];
+          }
+        });
+
+        // Deduplicate subjects (in case there are any with the same name)
+        const uniqueSubjects = Array.from(
+          new Map(
+            allSubjects.map((subject) => [subject.name, subject])
+          ).values()
         );
 
-        if (matchedCourse) {
-          const fetchedSubjects = matchedCourse.subjects.map(
-            (subject: { name: string; notesFileUrl: string }) => ({
-              name: subject.name,
-              notesFileUrl: subject.notesFileUrl,
-            })
-          );
-          setSubjects(fetchedSubjects);
-        } else {
-          setSubjects([]);
-        }
+        setSubjects(uniqueSubjects);
       } else {
         setSubjects([]);
       }
     } catch (error) {
       console.error("Error fetching subjects:", error);
       setSubjects([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -87,6 +96,7 @@ export default function Courses() {
     setSelectedSubject("");
     setSubjects([]);
     setSelectedPdfUrl("");
+    setQuiz([]);
   };
 
   const handleBranchChange = (value: string) => {
@@ -94,6 +104,7 @@ export default function Courses() {
     setSelectedSubject("");
     setSubjects([]);
     setSelectedPdfUrl("");
+    setQuiz([]);
   };
 
   const handleSubjectChange = (value: string) => {
@@ -106,10 +117,12 @@ export default function Courses() {
     } else {
       setSelectedPdfUrl("");
     }
+    setQuiz([]);
   };
 
   const handleProceed = async () => {
     try {
+      setIsLoading(true);
       // Step 1: Generate quiz from the PDF
       const response = await fetch("/api/generate-quiz", {
         method: "POST",
@@ -125,6 +138,8 @@ export default function Courses() {
       }
     } catch (error) {
       console.error("Error generating quiz:", error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -205,14 +220,21 @@ export default function Courses() {
             <Select
               value={selectedSubject}
               onValueChange={handleSubjectChange}
-              disabled={!selectedBranch}
+              disabled={!selectedBranch || isLoading}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Choose your subject" />
+                <SelectValue
+                  placeholder={
+                    isLoading ? "Loading subjects..." : "Choose your subject"
+                  }
+                />
               </SelectTrigger>
               <SelectContent>
-                {subjects.map((subject) => (
-                  <SelectItem key={subject.name} value={subject.name}>
+                {subjects.map((subject, index) => (
+                  <SelectItem
+                    key={subject.subjectId || `${subject.name}-${index}`}
+                    value={subject.name}
+                  >
                     {subject.name}
                   </SelectItem>
                 ))}
@@ -222,9 +244,13 @@ export default function Courses() {
         </div>
 
         {selectedSubject && (
-          <Button className="w-full mt-8 py-6 text-lg" onClick={handleProceed}>
-            Proceed to Learn & Assessment
-            <ArrowRight className="ml-2 h-5 w-5" />
+          <Button
+            className="w-full mt-8 py-6 text-lg"
+            onClick={handleProceed}
+            disabled={isLoading}
+          >
+            {isLoading ? "Loading..." : "Proceed to Learn & Assessment"}
+            {!isLoading && <ArrowRight className="ml-2 h-5 w-5" />}
           </Button>
         )}
 
@@ -245,12 +271,15 @@ export default function Courses() {
           <div className="mt-8">
             <h2 className="text-2xl font-bold mb-4">Quiz</h2>
             {quiz.map((question, index) => (
-              <div key={index} className="mb-6">
+              <div key={`question-${index}`} className="mb-6">
                 <h3 className="text-lg font-semibold">{question.question}</h3>
                 <div className="space-y-2">
                   {question.options.map(
                     (option: string, optionIndex: number) => (
-                      <div key={optionIndex} className="flex items-center">
+                      <div
+                        key={`option-${index}-${optionIndex}`}
+                        className="flex items-center"
+                      >
                         <input
                           type="radio"
                           id={`question-${index}-option-${optionIndex}`}
